@@ -9,8 +9,13 @@ import android.text.TextUtils;
 import com.lemon.akhttp.cache.Cache;
 import com.lemon.akhttp.VolleyLog.MarkerLog;
 import com.lemon.akhttp.error.AuthFailureError;
+import com.lemon.akhttp.error.ServerError;
 import com.lemon.akhttp.error.VolleyError;
+import com.lemon.akhttp.toolbox.HttpUtils;
 
+import org.apache.http.HttpResponse;
+
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Collections;
@@ -526,6 +531,33 @@ public abstract class Request<T> implements Comparable<Request<T>> {
      */
     protected VolleyError parseNetworkError(VolleyError volleyError) {
         return volleyError;
+    }
+
+    /**
+     * Prepare to execute, invoke before {@link com.lemon.akhttp.stack.HttpStack#performRequest}.
+     * it's original purpose is reset some request parameters after timeout then retry, especially headers,
+     * the situation is when you have some headers need to init or reset every perform, for example the "Range"
+     * header for download a file, you obviously must retrieve the begin position of file and reset the "Range"
+     * for every time you going to retry, so that's why we add this method.
+     */
+    public void prepare() {
+    }
+
+    /**
+     * Handle the response for various request, normally, a request was a short and low memory-usage request,
+     * thus we can parse the response-content as byte[] in memory.
+     * However the {@link com.duowan.mobile.netroid.request.FileDownloadRequest}
+     * itself was a large memory-usage case, that's inadvisable for parse all
+     * response content to memory, so it had self-implement mechanism.
+     */
+    public byte[] handleResponse(HttpResponse response, ResponseDelivery delivery) throws IOException, ServerError {
+        // Some responses such as 204s do not have content.
+        if (response.getEntity() != null) {
+            return HttpUtils.responseToBytes(response);
+        } else {
+            // Add 0 byte response as a way of honestly representing a no-content request.
+            return new byte[0];
+        }
     }
 
 

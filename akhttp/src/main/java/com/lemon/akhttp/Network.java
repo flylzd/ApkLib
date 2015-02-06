@@ -22,6 +22,9 @@ import com.lemon.akhttp.error.VolleyError;
  * An interface for performing requests.
  */
 public interface Network {
+
+    /** Set the request delivery that use to post http networking callbacks. */
+    public void setDelivery(ResponseDelivery delivery);
     /**
      * Performs the specified request.
      * @param request Request to process
